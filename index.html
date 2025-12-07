@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+    content="Visual Sim-to-Real at Scale for Humanoid Loco-Manipulation">
+  <meta name="keywords" content="Robotics, Quadruped, Whole-body Control, Whole-body Manipulation">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>
+    VDOT: Efficient Unified Video Creation via Optimal Transport Distillation
+  </title>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QZ38WT2YPD"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-QZ38WT2YPD');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+
+  <script src="https://kit.fontawesome.com/19914a84eb.js" crossorigin="anonymous"></script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+
+</head>
+
+
+
+<section class="hero">
+  <div class="toc">
+    <h3>Content</h3>
+    <hr>
+    <ul>
+      <li><a href="#depth">V2V tasks</a></li>
+        <li class="toc-subsection"><a href="#depth">#1: Depth video to video</a></li>
+        <li class="toc-subsection"><a href="#pose">#2: Pose video to video</a></li>
+        <li class="toc-subsection"><a href="#flow">#3: Flow video to video</a></li>
+        <li class="toc-subsection"><a href="#grey">#4: Greyscale video to video</a></li>
+        <li class="toc-subsection"><a href="#scribble">#5: Scribble video to video</a></li>
+      <li><a href="#extension">Masked V2V tasks</a></li>
+        <li class="toc-subsection"><a href="#extension">#6: Temporal extension</a></li>
+        <li class="toc-subsection"><a href="#outpaint">#7: Video outpainting</a></li>
+      <li><a href="#multiref">R2V tasks</a></li>
+        <!-- <li class="toc-subsection"><a href="#reference">#8: Reference to video</a></li> -->
+        <li class="toc-subsection"><a href="#multiref">#8: Multi-reference to video</a></li>
+      <li><a href="#ff_pose">Composite tasks</a></li>
+        <li class="toc-subsection"><a href="#ff_pose">#9: Firstframe+pose video</a></li>
+        <li class="toc-subsection"><a href="#sbj_scribble">#10: Reference image+scribble video</a></li>
+      <li><a href="#inpaint">Generalizability to untrained tasks</a></li>
+        <li class="toc-subsection"><a href="#inpaint">#11: Video inpainting</a></li>
+        <li class="toc-subsection"><a href="#swapany">#12: Swap anything</a></li>
+        <li class="toc-subsection"><a href="#animation">#13: Character animation</a></li>
+        <li class="toc-subsection"><a href="#replacement">#14: Character replacement</a></li>
+        <li class="toc-subsection"><a href="#tryon">#15: Video try-on</a></li>
+      <li><a href="#abstract">Abstract</a></li>
+      <li><a href="#method">Method</a></li>
+      <li><a href="#BibTeX">BibTeX</a></li>
+    </ul>
+  </div>
+  <div class="hero-body">
+    <div class="container">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title" id="main-title"><span style="color: #76b900;">VDOT</span>: Efficient Unified Video Creation via <br> Optimal Transport Distillation </h1>
+
+          <div class="is-size-4 publication-authors">
+            <span class="author-block" style="font-size: 95%;">
+              <a href="https://yutongwang1012.github.io/">Yutong Wang</a><sup>1</sup>&nbsp;&nbsp;&nbsp;&nbsp;
+              <a href="https://github.com/aejion">Haiyu Zhang</a><sup>3,2</sup>&nbsp;&nbsp;&nbsp;&nbsp;
+              <a href="https://tianfan.info/">Tianfan Xue</a><sup>4,2</sup>&nbsp;&nbsp;&nbsp;&nbsp;
+              <a href="https://mmlab.siat.ac.cn/yuqiao/">Yu Qiao</a><sup>2</sup>
+              <br>
+              <a href="https://wyhsirius.github.io/">Yaohui Wang</a><sup>2</sup>&nbsp;&nbsp;&nbsp;&nbsp;
+              <a href="http://changxu.xyz/">Chang Xu</a><sup>1*</sup>&nbsp;&nbsp;&nbsp;&nbsp;
+              <a href="https://scholar.google.com/citations?user=3fWSC8YAAAAJ&hl=zh-CN">Xinyuan Chen</a><sup>2*</sup>&nbsp;&nbsp;&nbsp;&nbsp;
+            </span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><sup>*</sup>Corresponding authors&nbsp;&nbsp;</span>
+            <!-- <span class="author-block"><sup>†</sup>GEAR Team Leads</span> -->
+          </div>
+
+          <div class="column">
+            <image src="./static/images/usyd_ailab_beihang_cuhk_logo.png" style="width: 70%;"></image>
+         </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <span class="link-block">
+                <a href="./static/vdot_compressed.pdf"
+                   class="external-link button is-normal is-rounded is-dark" target="_blank">
+                  <span class="icon">
+                      <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>PDF</span>
+                </a>
+              </span>
+              <!-- arXiv Link. -->
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2511.15200"
+                   class="external-link button is-normal is-rounded is-dark" target="_blank">
+                  <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>ArXiv</span>
+                </a>
+              </span>
+              <!-- <span class="link-block">
+                <a href="https://www.youtube.com/watch?v=tu7LSNYWDTs"
+                   class="external-link button is-normal is-rounded is-dark" target="_blank">
+                  <span class="icon">
+                      <i class="fab fa-youtube"></i>
+                  </span>
+                  <span>Video</span>
+                </a>
+              </span> -->
+              <!-- Datasets Link. -->
+              <span class="link-block">
+                <a href="https://huggingface.co/" class="external-link button is-normal is-rounded is-dark" target="_blank">
+                  <span class="icon">
+                      <i class="fas fa-database"></i>
+                  </span>
+                  <span>UVCBench (Coming Soon)</span>
+                </a>
+              </span>
+              <!-- twitter Link. -->
+              <!-- <span class="link-block">
+                <a href="https://x.com/TairanHe99/status/1991546857097687372"
+                   class="external-link button is-normal is-rounded is-dark" target="_blank">
+                  <span class="icon">
+                      <i class="fab fa-twitter"></i>
+                  </span>
+                  <span>Summary</span>
+                </a>
+              </span> -->
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/hhhh1138/VDOT" class="external-link button is-normal is-rounded is-dark" target="_blank">
+                  <span class="icon">
+                    <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<section class="section" id="autonomous-locomanip">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-2" style="text-align: left; padding-bottom: 10px;">Teaser video: Character Replacement in just 4 denoising steps</h2>
+        <tr>
+          <td>
+
+            <div class="columns is-centered"> <!-- Correct Bulma structure -->
+              <div class="column is-centered has-text-centered">
+                <!-- <h3 class="title is-3" style="text-align: center; margin-bottom: 10px; font-size: x-large;">Consecutive Successes</h3> -->
+                <video autoplay muted loop playsinline controls src="./static/videos/cover/sour_cover2.mp4" width="85%" style="border-radius:10px;"></video>
+              </div>
+            </div>
+            <br>
+
+          </td>
+        </tr>
+      </div> 
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="depth">V2V #1: Depth video to video</h2>
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px;">
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/depth-src-3.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Input video</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/depth-ltx-3.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-LTX-0.9B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/depth-vace-3.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-Wan-14B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/depth-out-3.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT (Ours)</div>
+          </div>
+        </div>
+        <div class="prompt-collapse-container">
+          <details class="prompt-details">
+              <summary class="prompt-summary">
+                  Show Input Prompt
+              </summary>
+              <div class="prompt-content">
+                  <p>
+                    <b>Input prompt:</b> Inside a grand cathedral with towering Gothic arches: a lone visitor walks slowly down the central nave toward the altar, sunlight streaming through stained-glass windows high above, pews and columns receding symmetrically into deep perspective.
+                  </p>
+              </div>
+          </details>
+        </div>
+      </div> 
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="pose">V2V #2: Pose video to video</h2>
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px;">
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/pose-src-18.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Input video</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/pose-ltx-18.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-LTX-0.9B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/pose-vace-18.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-Wan-14B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/pose-out-18.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT (Ours)</div>
+          </div>
+        </div>
+        
+        <div class="prompt-collapse-container">
+          <details class="prompt-details">
+              <summary class="prompt-summary">
+                  Show Input Prompt
+              </summary>
+              <div class="prompt-content">
+                <p>
+                  <b>Input prompt:</b> An elderly man with white hair sits on a park bench practicing tai chi, dressed in a navy blue cotton-linen practice outfit. His movements are slow and fluid, his arms tracing smooth arcs like flowing clouds, as his center of gravity shifts steadily between his legs. His expression is serene, his breathing even, and his palms turn with gentle yet powerful force. The backdrop is a park shrouded in morning mist, with the lake surface glistening faintly and willow branches swaying gently. A medium-shot side view, the camera slowly pans across, capturing the details of the arm's trajectory and the extension of the fingertips. The lighting is soft, showcasing the harmonious blend of movement and stillness in the Eastern rhythm.
+                </p>
+              </div>
+          </details>
+        </div>
+      </div> 
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="flow">V2V #3: Flow video to video</h2>
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px;">
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/flow-src-0.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Input video</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/flow-ltx-0.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-LTX-0.9B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/flow-vace-0.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-Wan-14B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/flow-out-0.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT (Ours)</div>
+          </div>
+        </div>
+        
+        <div class="prompt-collapse-container">
+          <details class="prompt-details">
+              <summary class="prompt-summary">
+                  Show Input Prompt
+              </summary>
+              <div class="prompt-content">
+                <p>
+                  <b>Input prompt:</b> An orange tabby cat darts across a sun-drenched living room with hardwood floors and scattered toys, intensely chasing a tiny red laser dot that zips erratically over a beige carpet—suddenly leaping, skidding, and making sharp 90-degree turns, its fur rippling with each abrupt movement, dust motes glowing in diagonal sunbeams.
+                </p>
+              </div>
+          </details>
+        </div>
+      </div> 
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="grey">V2V #4: Greyscale video to video</h2>
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px;">
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/grey-src-1.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Input video</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/grey-ltx-1.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-LTX-0.9B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/grey-vace-1.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-Wan-14B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/grey-out-1.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT (Ours)</div>
+          </div>
+        </div>
+        
+        <div class="prompt-collapse-container">
+          <details class="prompt-details">
+              <summary class="prompt-summary">
+                  Show Input Prompt
+              </summary>
+              <div class="prompt-content">
+                <p>
+                  <b>Input prompt:</b> An elderly sculptor in a dusty atelier chisels a marble bust by north-facing window light—fine stone dust floating in sunbeams, sharp highlights on emerging cheekbones, deep undercut shadows in eye sockets, rough raw stone contrasting with polished surfaces, tools scattered on wooden workbench.
+                </p>
+              </div>
+          </details>
+        </div>
+      </div> 
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="scribble">V2V #5: Scribble video to video</h2>
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px;">
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/scribble-src-2.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Input video</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/scribble-ltx-2.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-LTX-0.9B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/scribble-vace-2.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-Wan-14B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/scribble-out-2.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT (Ours)</div>
+          </div>
+        </div>
+        
+        <div class="prompt-collapse-container">
+          <details class="prompt-details">
+              <summary class="prompt-summary">
+                  Show Input Prompt
+              </summary>
+              <div class="prompt-content">
+                <p>
+                  <b>Input prompt:</b> A paper airplane glides in a smooth arc across a sunlit classroom—simple folded-wing shape tumbling gently, passing in front of chalkboard and rows of empty desks, sunlight highlighting its edges.
+                </p>
+              </div>
+          </details>
+        </div>
+      </div> 
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="extension">MV2V #6: Temporal extension</h2>
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px;">
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/extension-src-0.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Input video</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/extension-ltx-0.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-LTX-0.9B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/extension-vace-0.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-Wan-14B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/extension-out-0.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT (Ours)</div>
+          </div>
+        </div>
+        <div class="prompt-collapse-container">
+          <details class="prompt-details">
+              <summary class="prompt-summary">
+                  Show Input Prompt
+              </summary>
+              <div class="prompt-content">
+                <p>
+                  <b>Input prompt:</b> A basketball player in a dimly lit gym takes a deep breath, steps back beyond the three-point line, and launches a high-arcing shot—the ball spinning with backspin as it climbs, hanging momentarily at its apex under flickering fluorescent lights, then descending cleanly through the net with a soft swish, triggering cheers from blurred spectators in the background.
+                </p>
+              </div>
+          </details>
+        </div>
+      </div> 
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="outpaint">MV2V #7: Video outpainting</h2>
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px;">
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/outpaint-src-11.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Input video</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/outpaint-ltx-11.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-LTX-0.9B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/outpaint-vace-11.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-Wan-14B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/outpaint-out-11.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT (Ours)</div>
+          </div>
+        </div>
+        <div class="prompt-collapse-container">
+          <details class="prompt-details">
+              <summary class="prompt-summary">
+                  Show Input Prompt
+              </summary>
+              <div class="prompt-content">
+                  <p>
+                      <b>Input prompt:</b> A street performer plays violin in a subway station—original video crops only their instrument and hands; the extended view includes tiled walls with ads, commuters walking in both directions, escalators in the background, and vaulted ceilings with fluorescent lighting.
+                  </p>
+              </div>
+          </details>
+        </div>
+      </div> 
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="multiref">R2V #8: Multi-reference to video</h2>
+        
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px;">
+          
+          <div class="column is-6">
+            <div class="columns is-mobile">
+              <div class="column is-half has-text-centered">
+                <img src="./static/video/multi-ref-img-1.png" alt="Figure" style="width: 100%; height: 147px; object-fit: contain; background: #f0f0f0; border-radius: 10px;">
+                <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Reference images</div>
+              </div>
+              <div class="column is-half has-text-centered">
+                 <video autoplay muted loop playsinline controls src="./static/video/multi-ref-out-1.mp4" width="100%" style=" object-fit: contain; background: #000; border-radius: 10px;"></video>
+                <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT</div>
+              </div>
+            </div>
+            
+            <div class="prompt-collapse-container">
+              <details class="prompt-details">
+                  <summary class="prompt-summary">
+                      Show Input Prompt
+                  </summary>
+                  <div class="prompt-content">
+                    <p>
+                      <b>Input prompt:</b> A man dressed in a vibrant Hawaiian shirt with a colorful floral pattern, sits on a beach lounge chair. On his shoulder, a Pikachu with a small detective hat perches. The man holds an ice cream cone, taking a bite.
+                    </p>
+                  </div>
+              </details>
+            </div>
+          </div>
+
+          <div class="column is-6">
+            <div class="columns is-mobile">
+                <div class="column is-half has-text-centered">
+                  <img src="./static/video/multi-ref-img-2.png" alt="Figure" style="width: 100%; height: 147px; object-fit: contain; background: #f0f0f0; border-radius: 10px;">
+                  <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Reference images</div>
+                </div>
+                <div class="column is-half has-text-centered">
+                  <video autoplay muted loop playsinline controls src="./static/video/multi-ref-out-2.mp4" width="100%" style=" object-fit: contain; background: #000; border-radius: 10px;"></video>
+                  <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT</div>
+                </div>
+            </div>
+            
+            <div class="prompt-collapse-container">
+              <details class="prompt-details">
+                  <summary class="prompt-summary">
+                      Show Input Prompt
+                  </summary>
+                  <div class="prompt-content">
+                    <p>
+                      <b>Input prompt:</b> In a garage, a man sits on a chair. He retrieves a small black utility bag from a white desk.
+                    </p>
+                  </div>
+              </details>
+            </div>
+          </div>
+
+        </div>
+      </div> 
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="ff_pose">Composite task #9: Firstframe+pose video</h2>
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px;">
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/ff-pose-src-5.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Input video</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/ff-pose-ltx-5.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-LTX-0.9B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/ff-pose-vace-5.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-Wan-14B</div>
+          </div>
+          <div class="column is-one-quarter has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/ff-pose-out-5.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT (Ours)</div>
+          </div>
+        </div>
+        <div class="prompt-collapse-container">
+          <details class="prompt-details">
+              <summary class="prompt-summary">
+                  Show Input Prompt
+              </summary>
+              <div class="prompt-content">
+                  <p>
+                    <b>Input prompt:</b> A futuristic cyborg with glowing blue ocular implants and a sleek black exoskeleton walks deliberately through a ruined metropolis overgrown with bioluminescent vines, neon holographic ads flickering on crumbling skyscrapers under a violet twilight sky.
+                  </p>
+              </div>
+          </details>
+        </div>
+      </div> 
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="sbj_scribble">Composite task #10: Reference image+scribble video</h2>
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px;">
+          <div class="column is-one-fifth has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/sbj-scribble-src-12.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Input video</div>
+          </div>
+          <div class="column is-one-fifth has-text-centered">
+            <img src="./static/video/sbj-scribble-img-12.png" alt="Figure"  style="width: 100%; height: auto; border-radius: 10px;">
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Reference image</div>
+          </div>
+          <div class="column is-one-fifth has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/sbj-scribble-ltx-12.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-LTX-0.9B</div>
+          </div>
+          <div class="column is-one-fifth has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/sbj-scribble-vace-12.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VACE-Wan-14B</div>
+          </div>
+          <div class="column is-one-fifth has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/sbj-scribble-out-12.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT (Ours)</div>
+          </div>
+        </div>
+
+        <div class="prompt-collapse-container">
+          <details class="prompt-details">
+              <summary class="prompt-summary">
+                  Show Input Prompt
+              </summary>
+              <div class="prompt-content">
+                  <p>
+                    <b>Input prompt:</b> A jellyfish pulses rhythmically in deep blue ocean water, its translucent bell contracting and expanding with each beat, long tentacles trailing behind in slow, undulating waves as bioluminescent plankton flicker around it.
+                  </p>
+              </div>
+          </details>
+        </div>
+      </div> 
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="inpaint">Untrained task #11: Video inpainting</h2>
+        
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px;">
+          
+          <div class="column is-6">
+            <div class="columns is-mobile">
+              <div class="column is-half has-text-centered">
+                <video autoplay muted loop playsinline controls src="./static/video/inpaint-src-1.mp4" width="100%" style="border-radius:10px;"></video>
+                <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Input video</div>
+              </div>
+              <div class="column is-half has-text-centered">
+                <video autoplay muted loop playsinline controls src="./static/video/inpaint-out-1.mp4" width="100%" style="border-radius:10px;"></video>
+                <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT</div>
+              </div>
+            </div>
+            
+            <div class="prompt-collapse-container">
+              <details class="prompt-details">
+                  <summary class="prompt-summary">
+                      Show Input Prompt
+                  </summary>
+                  <div class="prompt-content">
+                    <p>
+                      <b>Input prompt:</b> A colossal golden eagle soared through the bustling city sky, its feathers blazing like flames, radiating a warm glow as its wings spread majestically. The eagle held its head high, eyes gleaming, gently flapping its wings to emit a soft radiance.
+                    </p>
+                  </div>
+              </details>
+            </div>
+          </div>
+
+          <div class="column is-6">
+            <div class="columns is-mobile">
+              <div class="column is-half has-text-centered">
+                <video autoplay muted loop playsinline controls src="./static/video/inpaint-src-2.mp4" width="100%" style="border-radius:10px;"></video>
+                <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Input video</div>
+              </div>
+              <div class="column is-half has-text-centered">
+                <video autoplay muted loop playsinline controls src="./static/video/inpaint-out-2.mp4" width="100%" style="border-radius:10px;"></video>
+                <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT</div>
+              </div>
+            </div>
+            
+            <div class="prompt-collapse-container">
+              <details class="prompt-details">
+                  <summary class="prompt-summary">
+                      Show Input Prompt
+                  </summary>
+                  <div class="prompt-content">
+                    <p>
+                      <b>Input prompt:</b> A person wearing a black helmet, black jacket, beige pants, and white sneakers is riding a black motorcycle on a highway. The rider has a black backpack and is holding the handlebars while riding in the right lane. The background shows green trees and bushes along the side of the road, with a clear blue sky above. The camera angle is from behind the rider, following closely as they ride down the highway. The lighting is bright and sunny, casting shadows on the road. The scene appears to be real-life footage.
+                    </p>
+                  </div>
+              </details>
+            </div>
+          </div>
+
+        </div>
+      </div> 
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="swapany">Untrained task #12: Swap anything</h2>
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px;">
+          <div class="column is-one-third has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/swap_anything-src-1.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Input video</div>
+          </div>
+          <div class="column is-one-third has-text-centered">
+            <img src="./static/video/swap_anything-img-1.png" alt="Figure"  style="width: 100%; height: auto; border-radius: 6px;">
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">Reference image</div>
+          </div>
+          <div class="column is-one-third has-text-centered">
+            <video autoplay muted loop playsinline controls src="./static/video/swap_anything-out-1.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: 8px; display: inline-block;">VDOT</div>
+          </div>
+
+        </div>
+        
+        <div class="prompt-collapse-container">
+          <details class="prompt-details">
+              <summary class="prompt-summary">
+                  Show Input Prompt
+              </summary>
+              <div class="prompt-content">
+                <p>
+                  <b>Input prompt:</b> The video shows a person riding a horse across a vast grassland. She appears to be engaged in some kind of outdoor activity or performance. The backdrop features spectacular mountain ranges and a cloudy sky, evoking a sense of tranquility and expansiveness. The entire video is shot from a fixed angle, focusing on the rider and her horse.
+                </p>
+              </div>
+          </details>
+        </div>
+      </div> 
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="animation">Untrained task #13: Character animation</h2>
+        
+        <div id="trayX-page-captions" style="display: none;">
+          <div data-page="0">
+            <b>Input prompt:</b> A long-eared elf sat behind the table, talking incessantly.
+          </div>
+          <div data-page="1">
+            <b>Input prompt:</b> A cartoon little girl sings passionately in front of a microphone, rendered in a bright and crisp cartoon style.
+          </div>
+        </div>
+        <div class="video-gallery-section" id="trayXGallerySection">
+          <div class="video-gallery-container">
+            <div class="video-gallery" id="videoGalleryTrayX">
+              <div class="gallery-video-item">
+                <video class="gallery-video" src="./static/video/animate-src-1.mp4" autoplay muted playsinline loop controls></video>
+                <div class="gallery-video-caption">Input video</div>
+              </div>
+              <div class="gallery-video-item">
+                <img src="./static/video/animate-img-1.png" alt="Figure" style="width: 100%; aspect-ratio: 16/9; object-fit: contain; background: #000; border-radius: 6px;">
+                <div class="gallery-video-caption">Reference image</div>
+              </div>
+              <div class="gallery-video-item">
+                <video class="gallery-video" src="./static/video/animate-out-1.mp4" autoplay muted playsinline loop controls></video>
+                <div class="gallery-video-caption">VDOT</div>
+              </div>
+              <div class="gallery-video-item">
+                <video class="gallery-video" src="./static/video/animate-src-2.mp4" autoplay muted playsinline loop controls></video>
+                <div class="gallery-video-caption">Input video</div>
+              </div>
+              <div class="gallery-video-item">
+                <img src="./static/video/animate-img-2.png" alt="Figure" style="width: 100%; aspect-ratio: 16/9; object-fit: contain; background: #000; border-radius: 6px;">
+                <div class="gallery-video-caption">Reference image</div>
+              </div>
+              <div class="gallery-video-item">
+                <video class="gallery-video" src="./static/video/animate-out-2.mp4" autoplay muted playsinline loop controls></video>
+                <div class="gallery-video-caption">VDOT</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="gallery-caption-container">
+              <div class="gallery-nav-controls">
+                  <button class="gallery-nav left" id="scrollLeftBtnTrayX">&lt;</button>
+                  <button class="gallery-nav right" id="scrollRightBtnTrayX">&gt;</button>
+              </div>
+              <p class="figure-caption gallery-caption" id="captionTextTrayX">
+                  Loading caption...
+              </p>
+          </div>
+        </div>
+
+      </div> 
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="replacement">Untrained task #14: Character replacement</h2>
+        
+        <div id="replace-page-captions" style="display: none;">
+          <div data-page="0">
+            <b>Input prompt:</b> A man points both index fingers at the camera, then turns away with a smile.
+          </div>
+          <div data-page="1">
+            <b>Input prompt:</b> A man wearing glasses is chatting with a woman.
+          </div>
+        </div>
+
+        <div class="video-gallery-section" id="replaceGallerySection">
+          <div class="video-gallery-container">
+            <div class="video-gallery" id="videoGalleryReplace">
+              <div class="gallery-video-item">
+                <video class="gallery-video" src="./static/video/replace-src-1.mp4" autoplay muted playsinline loop controls></video>
+                <div class="gallery-video-caption">Input video</div>
+              </div>
+              <div class="gallery-video-item">
+                <img src="./static/video/replace-img-1.jpg" alt="Figure" style="width: 100%; aspect-ratio: 16/9; object-fit: contain; background: #000; border-radius: 6px;">
+                <div class="gallery-video-caption">Reference image</div>
+              </div>
+              <div class="gallery-video-item">
+                <video class="gallery-video" src="./static/video/replace-out-1.mp4" autoplay muted playsinline loop controls></video>
+                <div class="gallery-video-caption">VDOT</div>
+              </div>
+              <div class="gallery-video-item">
+                <video class="gallery-video" src="./static/video/replace-src-2.mp4" autoplay muted playsinline loop controls></video>
+                <div class="gallery-video-caption">Input video</div>
+              </div>
+              <div class="gallery-video-item">
+                <img src="./static/video/replace-img-2.png" alt="Figure" style="width: 100%; aspect-ratio: 16/9; object-fit: contain; background: #000; border-radius: 6px;">
+                <div class="gallery-video-caption">Reference image</div>
+              </div>
+              <div class="gallery-video-item">
+                <video class="gallery-video" src="./static/video/replace-out-2.mp4" autoplay muted playsinline loop controls></video>
+                <div class="gallery-video-caption">VDOT</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="gallery-caption-container">
+              <div class="gallery-nav-controls">
+                  <button class="gallery-nav left" id="scrollLeftBtnReplace">&lt;</button>
+                  <button class="gallery-nav right" id="scrollRightBtnReplace">&gt;</button>
+              </div>
+              <p class="figure-caption gallery-caption" id="captionTextReplace">
+                  Loading caption...
+              </p>
+          </div>
+        </div>
+
+      </div> 
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3" style="text-align: left; padding-bottom: 0px;" id="tryon">Untrained task #15: Video try-on</h2>
+        <div class="columns is-centered" style="max-width: 1150px; margin: 0 auto; margin-left: 110px; align-items: stretch;">
+          
+          <div class="column is-2-mobile has-text-centered" style="display: flex; flex-direction: column;">
+            <video autoplay muted loop playsinline controls src="./static/video/tryon-src-1.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: auto; padding-top: 8px; display: inline-block;">Input video</div>
+          </div>
+
+          <div class="column is-2-mobile has-text-centered" style="display: flex; flex-direction: column;">
+            <img src="./static/video/tryon-img-1.png" alt="Figure"  style="width: 100%; height: auto; border-radius: 10px;">
+            <div class="gallery-video-caption" style="margin-top: auto; padding-top: 8px; display: inline-block;">Cloth</div>
+          </div>
+
+          <div class="column is-2-mobile has-text-centered" style="display: flex; flex-direction: column;">
+            <video autoplay muted loop playsinline controls src="./static/video/tryon-out-1.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: auto; padding-top: 8px; display: inline-block;">VDOT</div>
+          </div>
+
+          <div class="column is-2-mobile has-text-centered" style="display: flex; flex-direction: column;">
+            <video autoplay muted loop playsinline controls src="./static/video/tryon-src-3.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: auto; padding-top: 8px; display: inline-block;">Input video</div>
+          </div>
+
+          <div class="column is-2-mobile has-text-centered" style="display: flex; flex-direction: column;">
+            <img src="./static/video/tryon-img-3.png" alt="Figure"  style="width: 100%; height: auto; border-radius: 6px;">
+            <div class="gallery-video-caption" style="margin-top: auto; padding-top: 8px; display: inline-block;">Cloth</div>
+          </div>
+
+          <div class="column is-2-mobile has-text-centered" style="display: flex; flex-direction: column;">
+            <video autoplay muted loop playsinline controls src="./static/video/tryon-out-3.mp4" width="100%" style="border-radius:10px;"></video>
+            <div class="gallery-video-caption" style="margin-top: auto; padding-top: 8px; display: inline-block;">VDOT</div>
+          </div>
+
+        </div>
+        <!-- <p class="figure-caption non-gallery-caption">
+          <b>Input prompt:</b> A basketball player in a dimly lit gym takes a deep breath, steps back beyond the three-point line, and launches a high-arcing shot—the ball spinning with backspin as it climbs, hanging momentarily at its apex under flickering fluorescent lights, then descending cleanly through the net with a soft swish, triggering cheers from blurred spectators in the background.
+        </p> -->
+      </div> 
+    </div>
+  </div>
+</section>
+
+
+
+<section class="section" id="abstract">
+  <div class="container">
+    <!-- Abstract. -->
+    <h2 class="title is-2" id="abstract-title">Abstract</h2>
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <div class="content has-text-justified">
+          <p>
+            The rapid development of generative models has significantly advanced image and video applications. 
+            Among these, video creation, aimed at generating videos under various conditions, has gained substantial attention. 
+            However, existing video creation models either focus solely on a few specific conditions or suffer from excessively long generation times due to complex model inference, making them impractical for real-world applications. 
+            To mitigate these issues, we propose an efficient unified video creation model, named VDOT. 
+            Concretely, we model the training process with the distribution matching distillation (DMD) paradigm. 
+            Instead of using the Kullback-Leibler (KL) minimization, we additionally employ a novel computational optimal transport (OT) technique to optimize the discrepancy between the real and fake score distributions. 
+            The OT distance inherently imposes geometric constraints, mitigating potential zero-forcing or gradient collapse issues that may arise during KL-based distillation within the few-step generation scenario, and thus, enhances the efficiency and stability of the distillation process. 
+            Further, we integrate a discriminator to enable the model to perceive real video data, thereby enhancing the quality of generated videos. 
+            To support training unified video creation models, we propose a fully automated pipeline for video data annotation and filtering that accommodates multiple video creation tasks. 
+            Meanwhile, we curate a unified testing benchmark, UVCBench, to standardize evaluation.
+            Experiments demonstrate that our 4-step VDOT outperforms or matches other baselines with 100 denoising steps. 
+        </p>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="method">
+  <div class="container">
+    <h2 class="title is-2" style="text-align: left;">Method</h2>
+    <!-- <h2 class="title is-4" style="text-align: center;">Stage 1: RL Pre-training with Soft Dynamics Constraints</h2>
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-two-thirds">
+        <div class="content has-text-justified">
+          <p>
+            In the RL pre-training stage, we allow robots to penetrate obstacles using an automatic curriculum that enforces soft dynamics constraints. This encourages robots to gradually learn to overcome these obstacles while minimizing penetrations. 
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-three-fifths is-centered has-text-centered">
+        <video controls autoplay loop muted playsinline src="./resources/method/soft-dyanmics.mp4" poster="./resources/loading-icon.gif" style="border: 1px solid #bbb; border-radius: 10px; margin: 1.0%;"></video>
+      </div>
+    </div>
+    <h2 class="title is-4" style="text-align: center;">Stage 2: RL Fine-tuning with Hard Dynamics Constraints</h2>
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-two-thirds">
+        <div class="content has-text-justified">
+          <p>
+            In the RL fine-tuning stage, we enforce all dynamics constraints and fine-tune the behaviors learned in the pre-training stage with realistic dynamics.         </p>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-three-fifths is-centered has-text-centered">
+        <video controls autoplay loop muted playsinline src="./resources/method/hard-dynamics.mp4" poster="./resources/loading-icon.gif" style="border: 1px solid #bbb; border-radius: 10px; margin: 1.0%;"></video>
+      </div>
+    </div> -->
+    <!-- <h2 class="title is-4" style="text-align: center;">Training Framework</h2> -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <div class="content has-text-justified">
+          <p>
+            The contributions of this work are two-fold:
+          </p>
+          <ol>
+            <li>We propose <span class="method" style="color: #76b900;">VDOT</span>, an efficient unified video creation framework based on optimal-transport distillation. The OT regularizer provides a geometric constraint to distribution matching, improving training stability and efficiency.</li>
+            <li>We develop a fully automated multi-task data construction pipeline and curate a comprehensive benchmark, <span class="method" style="color: #76b900;">UVCBench</span>. Experiments on UVCBench demonstrate that our unified video creator achieves superior performance on both objective metrics and human evaluations while maintaining few-step inference.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <img src="./static/images/vdot-pipeline.png" alt="VDOT pipeline" style="width: 100%;" />
+      </div>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <img src="./static/images/vdot-dataset.png" alt="VDOT dataset" style="width: 100%;" />
+      </div>
+    </div>
+
+    <section class="section" id="BibTeX">
+      <div class="container">
+        <div class="columns is-centered">
+          <div class="column is-four-fifths">
+            <h2 class="title is-2" style="text-align: left;">BibTeX</h2>
+            <pre><code></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- <section class="section" id="BibTeX">
+      <div class="container">
+        <div class="columns is-centered">
+          <div class="column is-four-fifths">
+            <h2 class="title is-2" style="text-align: left;">BibTeX</h2>
+            <pre><code>@article{he2025viral,
+              title={VIRAL: Visual Sim-to-Real at Scale for Humanoid Loco-Manipulation},
+              author={He, Tairan and Wang, Zi and Xue, Haoru and Ben, Qingwei and Luo, Zhengyi and Xiao, Wenli and Yuan, Ye and Da, Xingye and Castañeda, Fernando and Sastry, Shankar and Liu, Changliu and Shi, Guanya and Fan, Linxi and Zhu, Yuke},
+              journal={arXiv preprint arXiv:2511.15200},
+              year={2025}
+            }</code></pre>
+          </div>
+        </div>
+      </div>
+    </section> -->
+
+
+
+    <footer class="footer">
+      <div class="container">
+        <div class="content has-text-centered">
+          <p>Page template borrowed from <a href="https://viral-humanoid.github.io/"><span class="dnerf">VIRAL</span></a>.</p>
+        </div>
+      </div>
+    </footer>
+
+  <!-- JavaScript for TOC Scroll Behavior -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const toc = document.querySelector('.toc');
+      const mainTitle = document.getElementById('main-title');
+      
+      if (toc && mainTitle) {
+        // Function to check if we should show the TOC
+        function checkTocVisibility() {
+          const titleRect = mainTitle.getBoundingClientRect();
+          
+          // Show TOC when the main title is getting close to the top (with 100px buffer)
+          if (titleRect.top <= 100) {
+            toc.classList.add('show');
+          } else {
+            toc.classList.remove('show');
+          }
+        }
+        
+        // Check on scroll
+        window.addEventListener('scroll', checkTocVisibility);
+        
+        // Check on load
+        checkTocVisibility();
+      }
+
+      // Active section highlighting in TOC
+      const tocLinks = document.querySelectorAll('.toc a');
+      const sections = [];
+      
+      // Collect all sections that have corresponding TOC links
+      tocLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          const sectionId = href.substring(1);
+          const section = document.getElementById(sectionId);
+          if (section) {
+            sections.push({
+              id: sectionId,
+              element: section,
+              link: link
+            });
+          }
+        }
+      });
+
+      function updateActiveTocLink() {
+        // Get current scroll position (with offset from top)
+        const scrollPosition = window.scrollY + 150; // 150px offset to trigger earlier
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        
+        // Find the current section
+        let currentSection = null;
+        
+        // Check if we're at the bottom of the page
+        if (window.scrollY + windowHeight >= documentHeight - 50) {
+          // If at bottom, highlight the last section
+          currentSection = sections[sections.length - 1];
+        } else {
+          // Find the section that's currently in view
+          for (let i = 0; i < sections.length; i++) {
+            const section = sections[i];
+            const rect = section.element.getBoundingClientRect();
+            const sectionTop = rect.top + window.scrollY;
+            const sectionBottom = sectionTop + rect.height;
+            
+            // Check if the top of viewport is within this section (with offset)
+            if (scrollPosition >= sectionTop && scrollPosition < sectionBottom) {
+              currentSection = section;
+              break;
+            }
+          }
+          
+          // If no section found in viewport, use the last section that's above current position
+          if (!currentSection) {
+            for (let i = sections.length - 1; i >= 0; i--) {
+              const section = sections[i];
+              const sectionTop = section.element.getBoundingClientRect().top + window.scrollY;
+              if (sectionTop <= scrollPosition) {
+                currentSection = section;
+                break;
+              }
+            }
+          }
+        }
+
+        // Update active class on TOC links
+        tocLinks.forEach(link => {
+          link.classList.remove('active');
+        });
+
+        if (currentSection) {
+          currentSection.link.classList.add('active');
+          
+          // Also highlight parent link if this is a subsection
+          const parentLi = currentSection.link.closest('li');
+          if (parentLi && parentLi.classList.contains('toc-subsection')) {
+            // Find the parent "Generalization" link
+            const generalizationLink = document.querySelector('.toc a[href="#generalization-1"]');
+            if (generalizationLink && !generalizationLink.closest('li').classList.contains('toc-subsection')) {
+              generalizationLink.classList.add('active');
+            }
+          }
+        }
+      }
+
+      // Update on scroll
+      window.addEventListener('scroll', updateActiveTocLink);
+      
+      // Update on load
+      updateActiveTocLink();
+    });
+  </script>
+
+  <!-- JavaScript for Video Gallery Navigation -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const galleries = [
+        {
+          sectionId: 'trayYGallerySection',
+          galleryInnerId: 'videoGalleryTrayY',
+          scrollLeftBtnId: 'scrollLeftBtnTrayY',
+          scrollRightBtnId: 'scrollRightBtnTrayY'
+        },
+        {
+          sectionId: 'trayXGallerySection',
+          galleryInnerId: 'videoGalleryTrayX',
+          scrollLeftBtnId: 'scrollLeftBtnTrayX',
+          scrollRightBtnId: 'scrollRightBtnTrayX'
+        },
+        {
+          sectionId: 'cylinderGallerySection',
+          galleryInnerId: 'videoGalleryCylinder',
+          scrollLeftBtnId: 'scrollLeftBtnCylinder',
+          scrollRightBtnId: 'scrollRightBtnCylinder'
+        },
+        {
+          sectionId: 'robotYGallerySection',
+          galleryInnerId: 'videoGalleryRobotY',
+          scrollLeftBtnId: 'scrollLeftBtnRobotY',
+          scrollRightBtnId: 'scrollRightBtnRobotY'
+        },
+        {
+          sectionId: 'robotXGallerySection',
+          galleryInnerId: 'videoGalleryRobotX',
+          scrollLeftBtnId: 'scrollLeftBtnRobotX',
+          scrollRightBtnId: 'scrollRightBtnRobotX'
+        },
+        {
+          sectionId: 'tableHeightGallerySection',
+          galleryInnerId: 'videoGalleryTableHeight',
+          scrollLeftBtnId: 'scrollLeftBtnTableHeight',
+          scrollRightBtnId: 'scrollRightBtnTableHeight'
+        },
+        {
+          sectionId: 'lightingGallerySection',
+          galleryInnerId: 'videoGalleryLighting',
+          scrollLeftBtnId: 'scrollLeftBtnLighting',
+          scrollRightBtnId: 'scrollRightBtnLighting'
+        },
+        {
+          sectionId: 'tableClothGallerySection',
+          galleryInnerId: 'videoGalleryTableCloth',
+          scrollLeftBtnId: 'scrollLeftBtnTableCloth',
+          scrollRightBtnId: 'scrollRightBtnTableCloth'
+        },
+        {
+          sectionId: 'tableTypeGallerySection',
+          galleryInnerId: 'videoGalleryTableType',
+          scrollLeftBtnId: 'scrollLeftBtnTableType',
+          scrollRightBtnId: 'scrollRightBtnTableType'
+        },
+        {
+          sectionId: 'objectGallerySection',
+          galleryInnerId: 'videoGalleryObject',
+          scrollLeftBtnId: 'scrollLeftBtnObject',
+          scrollRightBtnId: 'scrollRightBtnObject'
+        },
+        {
+          sectionId: 'failureCasesGallerySection',
+          galleryInnerId: 'videoGalleryFailureCases',
+          scrollLeftBtnId: 'scrollLeftBtnFailureCases',
+          scrollRightBtnId: 'scrollRightBtnFailureCases'
+        }
+      ];
+
+      galleries.forEach(gallery => {
+        const section = document.getElementById(gallery.sectionId);
+        const galleryInner = document.getElementById(gallery.galleryInnerId);
+        const scrollLeftBtn = document.getElementById(gallery.scrollLeftBtnId);
+        const scrollRightBtn = document.getElementById(gallery.scrollRightBtnId);
+
+        if (section && galleryInner && scrollLeftBtn && scrollRightBtn) {
+          // Find the gallery container (parent of galleryInner)
+          const galleryContainer = galleryInner.parentElement;
+
+          scrollLeftBtn.addEventListener('click', function() {
+            const scrollAmount = 300; // Adjust scroll distance as needed
+            galleryContainer.scrollBy({
+              left: -scrollAmount,
+              behavior: 'smooth'
+            });
+          });
+
+          scrollRightBtn.addEventListener('click', function() {
+            const scrollAmount = 300; // Adjust scroll distance as needed
+            galleryContainer.scrollBy({
+              left: scrollAmount,
+              behavior: 'smooth'
+            });
+          });
+
+          console.log(`Gallery navigation initialized for ${gallery.sectionId}`);
+        } else {
+          console.error(`Gallery elements not found for ${gallery.sectionId}`);
+        }
+      });
+    });
+  </script>
+
+  <!-- JavaScript for Timeline Navigation -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const timelineContainer = document.getElementById('sim2realTimelineContainer');
+      const navLeft = document.getElementById('sim2realNavLeft');
+      const navRight = document.getElementById('sim2realNavRight');
+
+      if (timelineContainer && navLeft && navRight) {
+        navLeft.addEventListener('click', function() {
+          const scrollAmount = 400; // Adjust scroll distance as needed
+          timelineContainer.scrollBy({
+            left: -scrollAmount,
+            behavior: 'smooth'
+          });
+        });
+
+        navRight.addEventListener('click', function() {
+          const scrollAmount = 400; // Adjust scroll distance as needed
+          timelineContainer.scrollBy({
+            left: scrollAmount,
+            behavior: 'smooth'
+          });
+        });
+
+        console.log('Timeline navigation initialized');
+      } else {
+        console.error('Timeline elements not found');
+      }
+
+      // Handle video clicks for enlarged display
+      const timelineVideos = document.querySelectorAll('.clickable-video');
+      const enlargedVideo = document.getElementById('enlargedVideo');
+      const enlargedVideoTitle = document.getElementById('enlargedVideoTitle');
+      const enlargedVideoDate = document.getElementById('enlargedVideoDate');
+
+      if (timelineVideos.length > 0 && enlargedVideo) {
+        // Set first video as active by default
+        timelineVideos[0].classList.add('active');
+
+        timelineVideos.forEach(function(video) {
+          video.addEventListener('click', function() {
+            // Remove active class from all videos
+            timelineVideos.forEach(v => v.classList.remove('active'));
+            
+            // Add active class to clicked video
+            this.classList.add('active');
+
+            // Update enlarged video
+            const videoSrc = this.getAttribute('src');
+            const videoTitle = this.getAttribute('data-title');
+            const videoDate = this.getAttribute('data-date');
+
+            enlargedVideo.src = videoSrc;
+            enlargedVideoTitle.textContent = videoTitle;
+            enlargedVideoDate.textContent = videoDate;
+
+            // Restart the enlarged video
+            enlargedVideo.load();
+            enlargedVideo.play();
+
+            console.log('Video clicked:', videoTitle);
+          });
+        });
+
+        console.log('Timeline video click handlers initialized');
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+    
+    // 定义一个通用的初始化函数
+    function initGallery(galleryId, btnLeftId, btnRightId, captionTextId, captionDataId) {
+        const itemsPerPage = 3; 
+        
+        const gallery = document.getElementById(galleryId);
+        const btnLeft = document.getElementById(btnLeftId);
+        const btnRight = document.getElementById(btnRightId);
+        const captionText = document.getElementById(captionTextId);
+        const captionDataContainer = document.getElementById(captionDataId);
+
+        // 安全检查：如果任何一个元素没找到，就停止初始化（防止报错）
+        if (!gallery || !btnLeft || !btnRight || !captionText || !captionDataContainer) {
+            console.error(`Gallery init failed for ${galleryId}: Missing elements.`);
+            return;
+        }
+
+        const items = gallery.querySelectorAll('.gallery-video-item');
+        let currentPage = 0;
+        const totalItems = items.length;
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+        function updateGallery() {
+            // 计算移动和间隙补偿
+            const gapSize = 1; // 对应 CSS gap: 1rem
+            const translateX = -(currentPage * 100);
+            const gapOffset = -(currentPage * gapSize);
+            
+            gallery.style.transform = `translateX(calc(${translateX}% + ${gapOffset}rem))`;
+
+            // 更新文字
+            const captionSource = captionDataContainer.querySelector(`div[data-page="${currentPage}"]`);
+            if (captionSource) {
+                captionText.innerHTML = captionSource.innerHTML;
+            } else {
+                captionText.innerHTML = ""; // 或者显示默认空字符
+            }
+
+            // 更新按钮
+            btnLeft.disabled = currentPage === 0;
+            btnRight.disabled = currentPage === totalPages - 1;
+            
+            btnLeft.style.opacity = currentPage === 0 ? "0.3" : "1";
+            btnRight.style.opacity = currentPage === totalPages - 1 ? "0.3" : "1";
+        }
+
+        // 绑定事件
+        btnLeft.addEventListener('click', () => {
+            if (currentPage > 0) {
+                currentPage--;
+                updateGallery();
+            }
+        });
+
+        btnRight.addEventListener('click', () => {
+            if (currentPage < totalPages - 1) {
+                currentPage++;
+                updateGallery();
+            }
+        });
+
+        // 立即运行一次以初始化
+        updateGallery();
+    }
+
+    // ============================================
+    // 在这里分别初始化你的两个画廊
+    // ============================================
+
+    // 1. 初始化 Animation 画廊 (使用原本的 TrayX ID)
+    initGallery(
+        'videoGalleryTrayX',      // 容器 ID
+        'scrollLeftBtnTrayX',     // 左键 ID
+        'scrollRightBtnTrayX',    // 右键 ID
+        'captionTextTrayX',       // 显示文字的 ID
+        'trayX-page-captions'     // 隐藏的文字数据 ID
+    );
+
+    // 2. 初始化 Replacement 画廊 (使用新改的 Replace ID)
+    initGallery(
+        'videoGalleryReplace', 
+        'scrollLeftBtnReplace', 
+        'scrollRightBtnReplace', 
+        'captionTextReplace', 
+        'replace-page-captions'
+    );
+});
+  </script>
+
+</body>
+
+</html>
+</html>
+</html>
+</html>
+</html>
+</html>
